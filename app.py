@@ -32,5 +32,5 @@ if __name__ == "__main__":
     config_file = sys.argv[1]
 
   app = setup(config_file)
-  app.run(host='0.0.0.0')
+  app.run(host='0.0.0.0', port=80)
 
