@@ -1,0 +1,41 @@
+guide_url: http://172.17.17.1:5000/api/guide
+guide_append_app: True
+update_interval: 300
+catchup_days: 7
+catchup_redirect_url: http://172.17.17.1:5000/api/catchup
+include_channels:
+  - "SRF1.ch"
+  - "SRF2.ch"
+  - "SRFInfo.ch"
+  - "TV24.ch"
+  - "TV25.ch"
+  - "ORF1.at"
+  - "ORF2.at"
+  - "RTL.de"
+  - "RTL2.de"
+  - "Pro7.de"
+  - "ProSiebenMaxx.de"
+  - "Nickelodeon.de"
+  - "DisneyChannel.de"
+  - "Kika.de"
+  - "BBC1.uk"
+  - "BBC2.uk"
+  - "ITV1Anglia.uk"
+  - "Channel4.uk"
+  - "Channel5.uk"
+  - "CBBC.uk"
+  - "CBeebies.uk"
+  - "CITV.uk"
+  - "ITV2.uk"
+  - "ITV3.uk"
+  - "ITV4.uk"
+  - "BBC4.uk"
+  - "E4.uk"
+  - "Film4.uk"
+  - "BBCWorldNews.uk"
+  - "BBCNews.uk"
+  - "CNN.uk"
+  - "CNBC.uk"
+  - "SkyNews.uk"
+  - "Rtp1.pt"
+
