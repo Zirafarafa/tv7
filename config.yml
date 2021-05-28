@@ -3,6 +3,9 @@ guide_append_app: True
 update_interval: 300
 catchup_days: 7
 catchup_redirect_url: http://172.17.17.1:5000/api/catchup
+
+cache_path: "/config/cache/tv7_cache"
+
 include_channels:
   - "SRF1.ch"
   - "SRF2.ch"

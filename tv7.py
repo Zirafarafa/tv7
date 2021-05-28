@@ -17,7 +17,6 @@ import dateutil.parser
 
 class TV7:
   def __init__(self, config=None):
-    self.session = CachedSession(cache_control=True, cache_name='tv7_cache')
     self.channels = None
     self.all_channels = None
 
@@ -31,12 +30,15 @@ class TV7:
     self.catchup_days = self.config.get('catchup_days', 7)
     self.include_channels = self.config.get('include_channels', None)
     self.catchup_redirect_url = self.config.get('catchup_redirect_url', None)
+    self.cache_path = self.config.get('cache_path', 'tv7_cache')
 
     self._last_update = 0
 
     self.catchup_url='https://tv7api2.tv.init7.net/api/replay/'
     self.channel_url='https://tv7api2.tv.init7.net/api/tvchannel/'
     self.epg_url='https://tv7api2.tv.init7.net/api/epg/'
+
+    self.session = CachedSession(cache_control=True, cache_name=self.cache_path)
 
   def api_get(self, url):
     d = []
