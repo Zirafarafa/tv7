@@ -67,5 +67,10 @@ def update():
   return jsonify({'success': True})
 
 
+@bp.route('/status')
+def status():
+  return jsonify({'success': True})
+
+
 
 

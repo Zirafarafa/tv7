@@ -1,7 +1,7 @@
 FROM python:3.8-slim-buster
 WORKDIR /app
 
-RUN apt-get update && apt-get -y install git && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
+RUN apt-get update && apt-get -y install git curl && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
 COPY requirements.txt requirements.txt
 
