@@ -1,11 +1,27 @@
+# If guide_url is set, this will be set as x-tvg-url in the generated m3u
+# file, so you probably wont need to manually configure the guide url in your
+# app
 guide_url: http://172.17.17.1:5000/api/guide
+
+# Set guide_append_app to True to add ?app=<appname> parameter to the
+# generated guide url.
 guide_append_app: True
+
+# How long before the upstream sources are refreshed
 update_interval: 300
+
+# Days back to generate in EPG
 catchup_days: 7
+
+# For apps which cannot output the required tv7 catchup parameters, this is
+# used as a simple redirector to tv7 with the correct params
 catchup_redirect_url: http://172.17.17.1:5000/api/catchup
 
+# A path to store cached api calls to tv7 so that their web service is not
+# overloaded
 cache_path: "/config/cache/tv7_cache"
 
+# A list of channels to include in the generated m3u
 include_channels:
   - "SRF1.ch"
   - "SRF2.ch"
