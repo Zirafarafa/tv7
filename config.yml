@@ -21,6 +21,9 @@ catchup_redirect_url: http://172.17.17.1:5000/api/catchup
 # overloaded
 cache_path: "/config/cache/tv7_cache"
 
+# Set the port to listen on
+port: 5000
+
 # A list of channels to include in the generated m3u
 include_channels:
   - "SRF1.ch"

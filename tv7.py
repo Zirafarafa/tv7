@@ -15,6 +15,7 @@ from lxml import etree as ET
 
 import dateutil.parser
 
+
 class TV7:
   def __init__(self, config=None):
     self.channels = None
@@ -251,13 +252,27 @@ class TV7:
 
     return(('\n'.join(lines))+'\n')
 
+
+def read_config(config_file):
+
+  with open(config_file) as conf:
+    config = yaml.load(conf, Loader=yaml.FullLoader)
+    if not 'port' in config:
+      config['port'] = 80
+    return config
+
+
 def main():
 
-  with open("config.yml") as file:
-    config = yaml.load(file, Loader=yaml.FullLoader)
+  if len(sys.argv) > 1:
+    config_file = sys.argv[1]
+  else:
+    config_file = 'config.yml'
 
-    tv7 = TV7(config=config)
-    tv7.update()
+  config = read_config(config_file)
+
+  tv7 = TV7(config=config)
+  tv7.update()
 
   print("Generating output")
   data = tv7.get_epg(app='kodi')
