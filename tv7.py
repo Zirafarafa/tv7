@@ -72,7 +72,7 @@ class TV7:
     self.channels = c
 
   def read_epg(self, channel_id):
-    url = '{}?channel={}'.format(self.epg_url, channel_id)
+    url = f'{self.epg_url}?channel={channel_id}'
     return self.api_get(url)
 
   def update(self, force=False):
@@ -99,8 +99,7 @@ class TV7:
     start_str = self._format_date(start, informat='unix', outformat='iso8601')
     stop_str = self._format_date(stop, informat='unix', outformat='iso8601')
 
-    url += '?channel={channel}&start={start}&stop={stop}'.format(
-        start=start_str, stop=stop_str, channel=channel)
+    url += f'?channel={channel}&start={start_str}&stop={stop_str}'
 
     return url
 
@@ -179,9 +178,9 @@ class TV7:
 
     app_params = ''
     if self.guide_append_app:
-      app_params='?app={}'.format(app)
+      app_params=f'?app={app}'
 
-    lines.append('#EXTM3U tvg-shift="0" x-tvg-url="{url}{app_params}" catchup-correction="0"'.format(url=self.guide_url, app_params=app_params))
+    lines.append(f'#EXTM3U tvg-shift="0" x-tvg-url="{self.guide_url}{app_params}" catchup-correction="0"')
 
     # Sample
     # #EXTINF:0 tvg-logo="https://api.tv.init7.net/media/logos/orf1_hd.png" tvg-name="ORF1.at" group-title="de", ORF1 HD
@@ -191,18 +190,20 @@ class TV7:
     # https://github.com/kodi-pvr/pvr.iptvsimple/blob/Matrix/README.md#supported-m3u-and-xmltv-elements
     # http://niklabs.com/catchup-settings/
     for c in self.channels:
-      line = '#EXTINF:0 type="video" tvg-name={canonical_name} group-title={language} tvg-logo={logo}'.format_map(c)
+      line = f'#EXTINF:-1 type="video"'
+      line += f' tvg-id="{c["canonical_name"]}"'
+      line += f' tvg-name="{c["canonical_name"]}"'
+      line += f' group-title="{c["language"]}"'
+      line += f' tvg-logo="{c["logo"]}"'
       if c['has_replay']:
-        line += ' catchup="default"'
-        line += ' catchup-days="{}"'.format(self.catchup_days)
+        line += f' catchup="default"'
+        line += f' catchup-days="{self.catchup_days}"'
 
         if app == 'kodi':
-          line += ' catchup-source="' + self.catchup_url + '?epg_pk={catchup-id}"'
+          line += f' catchup-source="{self.catchup_url}?epg_pk={{catchup-id}}"'
 
         if app == 'tivimate':
-          line += ' catchup-source="' + self.catchup_redirect_url
-          line += '?channel={pk}'.format_map(c)
-          line += '&start=${start}&duration=${duration}"'
+          line += f' catchup-source="{self.catchup_redirect_url}?channel={c["pk"]}&start=${{start}}&duration=${{duration}}"'
 
         if app == 'pvrlive':
           app = 'debug'
