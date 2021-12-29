@@ -39,7 +39,7 @@ class TV7:
     self.channel_url='https://tv7api2.tv.init7.net/api/tvchannel/'
     self.epg_url='https://tv7api2.tv.init7.net/api/epg/'
 
-    self.session = CachedSession(cache_control=True, cache_name=self.cache_path)
+    self.session = CachedSession(cache_control=True, cache_name=self.cache_path, expire_after=14400)
 
   def api_get(self, url):
     d = []
