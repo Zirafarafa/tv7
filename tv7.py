@@ -244,10 +244,10 @@ class TV7:
           line += '"'
 
 
-        line += ',{name}'.format_map(c)
+      line += ',{name}'.format_map(c)
 
 
-        lines.append(line)
+      lines.append(line)
 
       lines.append(c['hls_src'])
 
