@@ -95,9 +95,7 @@ class TV7:
 
       guide[channel_id].append(item)
 
-
-
-
+    self.guide = guide
 
 
   def update(self, force=False):
