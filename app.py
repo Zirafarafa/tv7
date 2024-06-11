@@ -1,10 +1,13 @@
 import api
 
+import logging
+
 import yaml
 from tv7 import TV7
 
 from flask import Flask
 from flask_cors import CORS
+from flask.logging import default_handler
 
 import sys
 
@@ -37,6 +40,11 @@ if __name__ == "__main__":
     config_file = sys.argv[1]
   else:
     config_file = 'config.yml'
+
+
+  logging.basicConfig()
+  root = logging.getLogger()
+  root.setLevel(logging.INFO)
 
   config = read_config(config_file)
 

@@ -1,15 +1,16 @@
-import json
+"""Generate m3u and epg from tv7 api."""
 import time
+import collections
+import logging
 import datetime
+import sys
+import re
+
 import tzlocal
 import pytz
 from requests_cache import CachedSession
-import sys
 
 import yaml
-
-import pprint
-import time
 
 from lxml import etree as ET
 
@@ -31,6 +32,8 @@ class TV7:
     self.include_channels = self.config.get('include_channels', None)
     self.catchup_redirect_url = self.config.get('catchup_redirect_url', None)
     self.cache_path = self.config.get('cache_path', 'tv7_cache')
+    self.udpxy_address = self.config.get('udpxy_address', None)
+    self.use_epg_for_channels = self.config.get('use_epg_for_channels', False)
 
     self._last_update = 0
 
@@ -64,26 +67,60 @@ class TV7:
           c.append(channel_by_name[channel_name])
       self.channels = c
 
-  def read_epg(self, channel_id):
+  def read_epg_for_channel(self, channel_id):
     url = f'{self.epg_url}?channel={channel_id}'
     return self.api_get(url)
+
+  def update_using_epg(self):
+    all_epg = self.api_get(self.epg_url)
+    logging.info('Got full EPG')
+
+    channels = {}
+    for item in all_epg:
+      c = item['channel']
+      channel_id = c['pk']
+
+      if channel_id not in channels:
+        channel_name = c['canonical_name']
+        if not self.include_channels or channel_name in self.include_channels:
+          channels[channel_id] = c
+
+    self.channels = channels.values()
+
+    guide = collections.defaultdict(list)
+    for item in all_epg:
+      channel_id = item['channel']['pk']
+      if channel_id not in channels:
+        continue
+
+      guide[channel_id].append(item)
+
+
+
+
+
 
   def update(self, force=False):
     if not force and time.time() - self._last_update < self.update_interval:
       return
 
-    print("Getting all channels")
+    if self.use_epg_for_channels:
+      logging.info(">> Using EPG for channel data")
+      self.update_using_epg()
+      return
+
+    logging.info(">> Getting all channels")
     self.read_channels()
 
-    print("Getting all EPGs")
+    logging.info(">> Getting all EPGs")
     for c in self.channels:
-      epg_list = self.read_epg(c['pk'])
+      epg_list = self.read_epg_for_channel(c['pk'])
       self.guide[c['pk']] = epg_list
 
     self._last_update = time.time()
 
   def get_catchup_url(self, channel, start, duration):
-    # Desired format 
+    # Desired format
     # https://tv7api2.tv.init7.net/api/replay/?channel={channel_pk}&start={start}&stop={stop}
 
     url = self.catchup_url
@@ -246,9 +283,29 @@ class TV7:
         lines.append('#KODIPROP:inputstream=inputstream.ffmpegdirect')
         lines.append('#KODIPROP:inputstream.ffmpegdirect.is_realtime_stream=true')
 
-      lines.append(c['hls_src'])
+      if c['has_hls']:
+        lines.append(c['hls_src'])
+      else:
+        lines.append(self.udpxy(c['src']))
 
     return(('\n'.join(lines))+'\n')
+
+  def udpxy(self, address):
+    """Wraps a udp address in udpxy if udpxy_address defined."""
+
+    if not self.udpxy_address:
+      return address
+
+    # Assume that address has the form udp://@233.50.230.22:5000
+    r = re.compile(r'udp://@([0-9.]+):(\d+)')
+    m = r.match(address)
+    if m:
+      udp_ip = m.group(1)
+      udp_port = m.group(2)
+      return f'{self.udpxy_address}/udp/{udp_ip}:{udp_port}'
+
+    # fallback
+    return address
 
 
 def read_config(config_file):

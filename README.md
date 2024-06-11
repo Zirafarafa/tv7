@@ -37,9 +37,9 @@ Web service:
 
 ## TV7 Web api
 
-* curl https://tv7api2.tv.init7.net/api/tvchannel/ | jq .
-* curl https://tv7api2.tv.init7.net/api/epg/?channel=781e3ee4-06fb-4cda-a367-469bd8e3cb5a | jq .
-* curl 'https://tv7api2.tv.init7.net/api/replay/?epg_pk=9af29ebf-3d26-4993-802f-7383c5080d58' -o /tmp/file.m3u
+* curl https://api.tv.init7.net/api/tvchannel/ | jq .
+* curl https://api.tv.init7.net/api/epg/?channel=781e3ee4-06fb-4cda-a367-469bd8e3cb5a | jq .
+* curl 'https://api.tv.init7.net/api/replay/?epg_pk=9af29ebf-3d26-4993-802f-7383c5080d58' -o /tmp/file.m3u
 
 ## M3U format
 * https://github.com/kodi-pvr/pvr.iptvsimple/blob/Matrix/README.md#supported-m3u-and-xmltv-elements
