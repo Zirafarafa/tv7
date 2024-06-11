@@ -56,12 +56,12 @@ class TV7:
     self.all_channels = self.api_get(self.channel_url)
     if not self.include_channels:
       self.channels = self.all_channels
-
-    c = []
-    for chan in self.all_channels:
-      if chan['canonical_name'] in self.include_channels:
-        c.append(chan)
-    self.channels = c
+    else:
+      c = []
+      channel_by_name = {chan['canonical_name']: chan for chan in self.all_channels}
+      for channel_name in self.include_channels:
+        c.append(channel_by_name[channel_name])
+      self.channels = c
 
   def read_epg(self, channel_id):
     url = f'{self.epg_url}?channel={channel_id}'
@@ -240,6 +240,10 @@ class TV7:
 
 
       lines.append(line)
+      if app == 'kodi':
+        # 06/24: The new HLS streams do not yield any sound with Kodi's default inputstream plugin, so we force ffmpeg.
+        lines.append('#KODIPROP:inputstream=inputstream.ffmpegdirect')
+        lines.append('#KODIPROP:inputstream.ffmpegdirect.is_realtime_stream=true')
 
       lines.append(c['hls_src'])
 
