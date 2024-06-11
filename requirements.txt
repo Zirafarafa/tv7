@@ -1,13 +1,13 @@
-Flask
-Flask-Cors
-Jinja2==3.0.1
-lxml==4.6.3
-python-dateutil==2.8.1
-pytz==2021.1
-PyYAML==5.4.1
-requests==2.25.1
-requests-cache @ git+https://github.com/reclosedev/requests-cache@2057fdcbefa12611ed2b3e2fd9d4824e631cc72c
-tzlocal==2.1
+Flask==3.0.3
+Jinja2==3.1.4
+lxml==5.2.2
+python-dateutil==2.9.0.post0
+pytz==2024.1
+PyYAML==6.0.1
+requests==2.32.1
+requests-cache==1.2.0
+tzlocal==5.2
 url-normalize==1.4.3
-urllib3==1.26.4
-Werkzeug==2.0.3
+urllib3==2.2.1
+Werkzeug==3.0.3
+

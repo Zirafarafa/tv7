@@ -15,7 +15,6 @@ from lxml import etree as ET
 
 import dateutil.parser
 
-
 class TV7:
   def __init__(self, config=None):
     self.channels = None
@@ -35,28 +34,21 @@ class TV7:
 
     self._last_update = 0
 
-    self.catchup_url='https://tv7api2.tv.init7.net/api/replay/'
-    self.channel_url='https://tv7api2.tv.init7.net/api/tvchannel/'
-    self.epg_url='https://tv7api2.tv.init7.net/api/epg/'
+    self.catchup_url='https://api.tv.init7.net/api/replay/'
+    self.channel_url='https://api.tv.init7.net/api/tvchannel/'
+    self.epg_url='https://api.tv.init7.net/api/epg/'
 
     self.session = CachedSession(cache_control=True, cache_name=self.cache_path, expire_after=14400)
 
   def api_get(self, url):
     d = []
 
-    read_from_cache = False
-    if self.session.cache.has_url(url):
-      read_from_cache = True
-
-    while url:
-      r = self.session.get(url)
+    current_url = url
+    while current_url:
+      r = self.session.get(current_url)
       j = r.json()
       d.extend(j['results'])
-      url = j['next']
-
-    if not read_from_cache:
-      # Not sure if this is needed, but I added ti to be safe
-      time.sleep(1)
+      current_url = j['next']
 
     return d
 
@@ -78,7 +70,7 @@ class TV7:
   def update(self, force=False):
     if not force and time.time() - self._last_update < self.update_interval:
       return
-      
+
     print("Getting all channels")
     self.read_channels()
 
