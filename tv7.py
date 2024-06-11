@@ -60,7 +60,8 @@ class TV7:
       c = []
       channel_by_name = {chan['canonical_name']: chan for chan in self.all_channels}
       for channel_name in self.include_channels:
-        c.append(channel_by_name[channel_name])
+        if channel_name in channel_by_name:
+          c.append(channel_by_name[channel_name])
       self.channels = c
 
   def read_epg(self, channel_id):
