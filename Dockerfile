@@ -1,4 +1,4 @@
-FROM python:3.8-slim-buster
+FROM python:3.11-slim-buster
 WORKDIR /app
 
 RUN apt-get update && apt-get -y install git curl && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
