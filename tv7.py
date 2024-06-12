@@ -19,7 +19,6 @@ import dateutil.parser
 class TV7:
   def __init__(self, config=None, session=None):
     self.channels = None
-    self.all_channels = None
 
     self.guide = {}
 
@@ -47,6 +46,7 @@ class TV7:
       self.session = CachedSession(cache_control=True, cache_name=self.cache_path, expire_after=14400)
 
   def api_get(self, url):
+    """Reads data from the tv7 api, getting the full depaginated list."""
     d = []
 
     current_url = url
@@ -58,48 +58,39 @@ class TV7:
 
     return d
 
-  def read_channels(self):
-    self.all_channels = self.api_get(self.channel_url)
+  def get_channels(self):
+    """Gets a potentially-filtered list of channels from /tvchannel/ api."""
+    all_channels = self.api_get(self.channel_url)
+
     if not self.include_channels:
-      self.channels = self.all_channels
-    else:
-      c = []
-      channel_by_name = {chan['canonical_name']: chan for chan in self.all_channels}
-      for channel_name in self.include_channels:
-        if channel_name in channel_by_name:
-          c.append(channel_by_name[channel_name])
-      self.channels = c
+      return all_channels
 
-  def read_epg_for_channel(self, channel_id):
-    url = f'{self.epg_url}?channel={channel_id}'
-    return self.api_get(url)
+    c = []
+    channel_by_name = {chan['canonical_name']: chan for chan in all_channels}
+    for channel_name in self.include_channels:
+      if channel_name in channel_by_name:
+        c.append(channel_by_name[channel_name])
+    return c
 
-  def update_using_epg(self):
+  def get_channels_from_epg(self):
+    """Gets a potentially-filtered list of channels from /epg/ api."""
     all_epg = self.api_get(self.epg_url)
-    logging.info('Got full EPG')
 
     channels = {}
     for item in all_epg:
       c = item['channel']
-      channel_id = c['pk']
+      name = c['canonical_name']
 
-      if channel_id not in channels:
-        channel_name = c['canonical_name']
-        if not self.include_channels or channel_name in self.include_channels:
-          channels[channel_id] = c
+      if name not in channels:
+        if not self.include_channels or name in self.include_channels:
+          channels[name] = c
 
-    self.channels = channels.values()
+    return channels.values()
 
-    guide = collections.defaultdict(list)
-    for item in all_epg:
-      channel_id = item['channel']['pk']
-      if channel_id not in channels:
-        continue
-
-      guide[channel_id].append(item)
-
-    self.guide = guide
-
+  def read_epg_for_channel(self, channel_id):
+    """Reads EPG for a single channel."""
+    url = f'{self.epg_url}?channel={channel_id}'
+    return self.api_get(url)
 
   def update(self, force=False):
     if not force and time.time() - self._last_update < self.update_interval:
@@ -107,11 +98,10 @@ class TV7:
 
     if self.use_epg_for_channels:
       logging.info(">> Using EPG for channel data")
-      self.update_using_epg()
-      return
-
-    logging.info(">> Getting all channels")
-    self.read_channels()
+      self.channels = self.get_channels_from_epg()
+    else:
+      logging.info(">> Getting all channels")
+      self.channels = self.get_channels()
 
     logging.info(">> Getting all EPGs")
     for c in self.channels:
@@ -133,7 +123,6 @@ class TV7:
     url += f'?channel={channel}&start={start_str}&stop={stop_str}'
 
     return url
-
 
   def _xml_add_channel_element(self, chan, chan_id, xml, xml_id, **kwargs):
     if chan_id in chan and chan[chan_id]:

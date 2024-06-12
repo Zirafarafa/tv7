@@ -21,8 +21,15 @@ In this case, the generated M3U will contain a link to the guide (`x-tvg-url`)
 
 # Testing
 
+First set up a python virtualenv, and run `pip install -r requirements.txt`
+
+## Unit Tests
+
+Run `pytest`
+
+## Manual
+
 File generation:
-* Set up a python virtualenv, and run `pip install -r requirements.txt`
 * Generate sample m3u and epg files using `python3 tv7.py <path to config>`
 
 Web service:
