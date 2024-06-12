@@ -17,7 +17,7 @@ from lxml import etree as ET
 import dateutil.parser
 
 class TV7:
-  def __init__(self, config=None):
+  def __init__(self, config=None, session=None):
     self.channels = None
     self.all_channels = None
 
@@ -41,7 +41,10 @@ class TV7:
     self.channel_url='https://api.tv.init7.net/api/tvchannel/'
     self.epg_url='https://api.tv.init7.net/api/epg/'
 
-    self.session = CachedSession(cache_control=True, cache_name=self.cache_path, expire_after=14400)
+    if session:
+      self.session = session
+    else:
+      self.session = CachedSession(cache_control=True, cache_name=self.cache_path, expire_after=14400)
 
   def api_get(self, url):
     d = []

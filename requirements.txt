@@ -11,4 +11,5 @@ tzlocal==5.2
 url-normalize==1.4.3
 urllib3==2.2.1
 Werkzeug==3.0.3
+pytest
 
