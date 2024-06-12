@@ -43,7 +43,8 @@ class TV7:
     if session:
       self.session = session
     else:
-      self.session = CachedSession(cache_control=True, cache_name=self.cache_path, expire_after=14400)
+      self.session = CachedSession(
+        cache_control=True, cache_name=self.cache_path, expire_after=14400)
 
   def api_get(self, url):
     """Reads data from the tv7 api, getting the full depaginated list."""
@@ -93,6 +94,7 @@ class TV7:
     return self.api_get(url)
 
   def update(self, force=False):
+    """Updates local copy of data from tv7 api."""
     if not force and time.time() - self._last_update < self.update_interval:
       return
 
@@ -111,6 +113,7 @@ class TV7:
     self._last_update = time.time()
 
   def get_catchup_url(self, channel, start, duration):
+    """Url for catchup source."""
     # Desired format
     # https://tv7api2.tv.init7.net/api/replay/?channel={channel_pk}&start={start}&stop={stop}
 
@@ -155,8 +158,10 @@ class TV7:
 
     for prog in self.guide[pk]:
       programme_attrs = {
-        'start': self._format_date(prog['timeslot']['lower'], informat='iso8601', outformat='xmltv'),
-        'stop': self._format_date(prog['timeslot']['upper'], informat='iso8601', outformat='xmltv'),
+        'start': self._format_date(
+          prog['timeslot']['lower'], informat='iso8601', outformat='xmltv'),
+        'stop': self._format_date(
+          prog['timeslot']['upper'], informat='iso8601', outformat='xmltv'),
         'channel': chan_id,
       }
       if app == 'kodi':
@@ -179,6 +184,7 @@ class TV7:
         ET.SubElement(p, 'icon', src=icon)
 
   def get_epg(self, app):
+    """Returns EPG in xmltv format."""
 
     # http://wiki.xmltv.org/index.php/XMLTVFormat
 
@@ -189,10 +195,13 @@ class TV7:
     for c in self.channels:
       self._xml_add_channel(tv, c, app)
 
-    data = ET.tostring(tv, pretty_print=True, xml_declaration=True, encoding="UTF-8", doctype='<!DOCTYPE tv SYSTEM "xmltv.dtd">')
+    data = ET.tostring(
+      tv, pretty_print=True, xml_declaration=True,
+      encoding="UTF-8", doctype='<!DOCTYPE tv SYSTEM "xmltv.dtd">')
     return data
 
   def get_m3u(self, app):
+    """Returns channels in m3u format."""
     # https://github.com/kodi-pvr/pvr.iptvsimple/blob/Matrix/README.md#catchup-format-specifiers
     lines = []
 
@@ -200,7 +209,9 @@ class TV7:
     if self.guide_append_app:
       app_params=f'?app={app}'
 
-    lines.append(f'#EXTM3U tvg-shift="0" x-tvg-url="{self.guide_url}{app_params}" catchup-correction="0"')
+    lines.append(
+      '#EXTM3U tvg-shift="0" '
+      f'x-tvg-url="{self.guide_url}{app_params}" catchup-correction="0"')
 
     # Sample
     # #EXTINF:0 tvg-logo="https://api.tv.init7.net/media/logos/orf1_hd.png" tvg-name="ORF1.at" group-title="de", ORF1 HD
@@ -299,6 +310,7 @@ class TV7:
 
 
 def read_config(config_file):
+  """Reads config into a dict."""
 
   with open(config_file) as conf:
     config = yaml.load(conf, Loader=yaml.FullLoader)
@@ -308,6 +320,7 @@ def read_config(config_file):
 
 
 def main():
+  """Main"""
 
   if len(sys.argv) > 1:
     config_file = sys.argv[1]
