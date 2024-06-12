@@ -63,34 +63,35 @@ class TV7:
 
     return d
 
-  def get_channels(self):
-    """Gets a potentially-filtered list of channels from /tvchannel/ api."""
-    all_channels = self.api_get(self.channel_url)
-
+  def maybe_filter_and_sort_channels(self, channels):
     if not self.include_channels:
-      return all_channels
+      return channels
 
+    channel_by_name = {c['canonical_name']: c for c in channels}
     c = []
-    channel_by_name = {chan['canonical_name']: chan for chan in all_channels}
     for channel_name in self.include_channels:
       if channel_name in channel_by_name:
         c.append(channel_by_name[channel_name])
     return c
 
+  def get_channels(self):
+    """Gets a potentially-filtered list of channels from /tvchannel/ api."""
+    all_channels = self.api_get(self.channel_url)
+    return self.maybe_filter_and_sort_channels(all_channels)
+
   def get_channels_from_epg(self):
     """Gets a potentially-filtered list of channels from /epg/ api."""
     all_epg = self.api_get(self.epg_url)
 
-    channels = {}
+    channel_by_name = {}
     for item in all_epg:
       c = item['channel']
       name = c['canonical_name']
 
-      if name not in channels:
-        if not self.include_channels or name in self.include_channels:
-          channels[name] = c
+      if name not in channel_by_name:
+        channel_by_name[name] = c
 
-    return channels.values()
+    return self.maybe_filter_and_sort_channels(channel_by_name.values())
 
   def read_epg_for_channel(self, channel_id):
     """Reads EPG for a single channel."""
