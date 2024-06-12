@@ -2,3 +2,6 @@ __pycache__
 cache
 venv
 samples
+config-testing.yml
+tv7_cache.sqlite
+
