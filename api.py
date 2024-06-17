@@ -9,13 +9,13 @@ tv7 = None
 def channels():
   tv7.update()
 
-  format = request.args.get('format', 'm3u')
+  fmt = request.args.get('format', 'm3u')
   app = request.args.get('app', 'kodi')
-  if format == 'json':
+  if fmt == 'json':
     return jsonify(tv7.channels)
-  if format == 'all':
+  if fmt == 'all':
     return jsonify(tv7.all_channels)
-  if format == 'm3u':
+  if fmt == 'm3u':
     response = make_response(tv7.get_m3u(app=app))
     response.mimetype = "text/plain"
     return response
@@ -28,13 +28,13 @@ def channels():
 def guide():
   tv7.update()
 
-  format = request.args.get('format', 'xmltv')
+  fmt = request.args.get('format', 'xmltv')
   app = request.args.get('app', 'kodi')
 
-  if format == 'json':
+  if fmt == 'json':
     return jsonify(tv7.channels)
 
-  if format == 'xmltv':
+  if fmt == 'xmltv':
     response = make_response(tv7.get_epg(app=app))
     response.mimetype = "application/xml"
     return response
@@ -47,7 +47,6 @@ def guide():
 def catchup():
   # Used for apps which cannot correctly format the catchup-source args
   # Redirects to tv7 with the correct start and stop args
-  app = request.args.get('app', 'kodi')
   channel = request.args.get('channel')
   start = int(request.args.get('start'))
   duration = int(request.args.get('duration'))
@@ -57,7 +56,7 @@ def catchup():
 
   url = tv7.get_catchup_url(channel=channel, start=start, duration=duration)
   return redirect(url)
-  
+
 
 @bp.route('/update')
 def update():
@@ -70,7 +69,4 @@ def update():
 @bp.route('/status')
 def status():
   return jsonify({'success': True})
-
-
-
 

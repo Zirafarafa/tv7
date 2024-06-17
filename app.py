@@ -12,26 +12,26 @@ from flask.logging import default_handler
 import sys
 
 
-def read_config(config_file):
+def read_config(file):
 
-  with open(config_file) as conf:
-    config = yaml.load(conf, Loader=yaml.FullLoader)
-    if not 'port' in config:
-      config['port'] = 80
-    return config
+  with open(file) as conf:
+    c = yaml.load(conf, Loader=yaml.FullLoader)
+    if not 'port' in c:
+      c['port'] = 80
+    return c
 
 
-def setup(config):
-  tv7 = TV7(config=config)
+def setup(cfg):
+  tv7 = TV7(config=cfg)
   tv7.update()
 
   api.tv7 = tv7
 
-  app = Flask(__name__)
-  CORS(app)
+  setup_app = Flask(__name__)
+  CORS(setup_app)
 
-  app.register_blueprint(api.bp)
-  return app
+  setup_app.register_blueprint(api.bp)
+  return setup_app
 
 
 if __name__ == "__main__":
@@ -40,7 +40,6 @@ if __name__ == "__main__":
     config_file = sys.argv[1]
   else:
     config_file = 'config.yml'
-
 
   logging.basicConfig()
   root = logging.getLogger()
