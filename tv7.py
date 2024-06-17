@@ -6,6 +6,8 @@ import datetime
 import sys
 import re
 
+import threading
+
 import tzlocal
 import pytz
 from requests_cache import CachedSession
@@ -15,6 +17,8 @@ import yaml
 from lxml import etree as ET
 
 import dateutil.parser
+
+sem = threading.Semaphore()
 
 class TV7:
   def __init__(self, config=None, session=None):
@@ -95,22 +99,24 @@ class TV7:
 
   def update(self, force=False):
     """Updates local copy of data from tv7 api."""
-    if not force and time.time() - self._last_update < self.update_interval:
-      return
 
-    if self.use_epg_for_channels:
-      logging.info(">> Using EPG for channel data")
-      self.channels = self.get_channels_from_epg()
-    else:
-      logging.info(">> Getting all channels")
-      self.channels = self.get_channels()
+    with sem:
+      if not force and time.time() - self._last_update < self.update_interval:
+        return
 
-    logging.info(">> Getting all EPGs")
-    for c in self.channels:
-      epg_list = self.read_epg_for_channel(c['pk'])
-      self.guide[c['pk']] = epg_list
+      if self.use_epg_for_channels:
+        logging.info(">> Using EPG for channel data")
+        self.channels = self.get_channels_from_epg()
+      else:
+        logging.info(">> Getting all channels")
+        self.channels = self.get_channels()
 
-    self._last_update = time.time()
+      logging.info(">> Getting all EPGs")
+      for c in self.channels:
+        epg_list = self.read_epg_for_channel(c['pk'])
+        self.guide[c['pk']] = epg_list
+
+      self._last_update = time.time()
 
   def get_catchup_url(self, channel, start, duration):
     """Url for catchup source."""
