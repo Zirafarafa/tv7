@@ -5,6 +5,7 @@ import logging
 import datetime
 import sys
 import re
+import m3u_parser
 
 import threading
 
@@ -41,7 +42,16 @@ class TV7:
     self._last_update = 0
 
     self.catchup_url='https://api.tv.init7.net/api/replay/'
+    # The channel data from the default API has priority 0.
     self.channel_url='https://api.tv.init7.net/api/tvchannel/'
+    # Channel data may be overriden if data for the same channel ID is available
+    # from another source with higher priority (bigger number).
+    self.m3u_channel_urls_with_priority=[
+        ('https://www.init7.net/de/support/faq/srg-sender-full-hd/srg-fhd-hls.m3u', 2),
+        ('https://www.init7.net/de/support/faq/srg-sender-full-hd/srg-fhd-mc.m3u', 1),
+        ('https://api.init7.net/tvchannels.m3u?rp=true', 0),
+        ('https://api.init7.net/tvchannels.m3u', 0),
+    ]
     self.epg_url='https://api.tv.init7.net/api/epg/'
 
     if session:
@@ -63,35 +73,67 @@ class TV7:
 
     return d
 
-  def maybe_filter_and_sort_channels(self, channels):
-    if not self.include_channels:
-      return channels
-
-    channel_by_name = {c['canonical_name']: c for c in channels}
-    c = []
-    for channel_name in self.include_channels:
-      if channel_name in channel_by_name:
-        c.append(channel_by_name[channel_name])
-    return c
-
-  def get_channels(self):
+  def get_channels_from_api(self):
     """Gets a potentially-filtered list of channels from /tvchannel/ api."""
-    all_channels = self.api_get(self.channel_url)
-    return self.maybe_filter_and_sort_channels(all_channels)
+    channels = self.api_get(self.channel_url)
+    return {c['canonical_name']: c for c in channels}
 
   def get_channels_from_epg(self):
     """Gets a potentially-filtered list of channels from /epg/ api."""
     all_epg = self.api_get(self.epg_url)
 
-    channel_by_name = {}
+    channels_by_name = {}
     for item in all_epg:
       c = item['channel']
       name = c['canonical_name']
 
-      if name not in channel_by_name:
-        channel_by_name[name] = c
+      if name not in channels_by_name:
+        channels_by_name[name] = c
 
-    return self.maybe_filter_and_sort_channels(channel_by_name.values())
+    return channels_by_name
+
+  def maybe_filter_and_sort_channels(self, channels_by_name):
+    if not self.include_channels:
+      return channels_by_name.values()
+
+    c = []
+    for channel_name in self.include_channels:
+      if channel_name in channels_by_name:
+        c.append(channels_by_name[channel_name])
+    return c
+
+  def merge_m3u_channel_data(self, channels_by_name):
+    """Merge data from m3u sources into channels_by_name according to priorities."""
+    # Sort by ascending order and then we keep on overwriting.
+    m3u_urls = sorted(self.m3u_channel_urls_with_priority, key=lambda x: x[1])
+    useragent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
+    parser = m3u_parser.M3uParser(timeout=5, useragent=useragent)
+    print(channels_by_name.keys())
+    for m3u_url, priority in m3u_urls:
+      parser.parse_m3u(m3u_url)
+      for channel in parser.get_list():
+        channel_id = channel["tvg"]["name"]
+        channel_url = channel["url"]
+        if channel_id in channels_by_name:
+          channel_data = channels_by_name[channel_id]
+          url_key = 'hls_src' if channel_url.startswith('http') else 'src'
+          # Overwrite channel URL if eligible.
+          if channel_data[url_key] and priority > 0:
+            channel_data[url_key] = channel_url
+        else:
+          print(f"Skipping unknown channel_id {channel_id}.")
+    return channels_by_name
+
+  def get_channels(self):
+    """Gets a potentially-filtered list of channels from the desired api."""
+    if self.use_epg_for_channels:
+      logging.info(">> Using EPG for channel data")
+      channels_by_name = self.get_channels_from_epg()
+    else:
+      logging.info(">> Getting all channels")
+      channels_by_name = self.get_channels_from_api()
+    channels_by_name = self.merge_m3u_channel_data(channels_by_name)
+    return self.maybe_filter_and_sort_channels(channels_by_name)
 
   def read_epg_for_channel(self, channel_id):
     """Reads EPG for a single channel."""
@@ -105,12 +147,7 @@ class TV7:
       if not force and time.time() - self._last_update < self.update_interval:
         return
 
-      if self.use_epg_for_channels:
-        logging.info(">> Using EPG for channel data")
-        self.channels = self.get_channels_from_epg()
-      else:
-        logging.info(">> Getting all channels")
-        self.channels = self.get_channels()
+      self.channels = self.get_channels()
 
       logging.info(">> Getting all EPGs")
       for c in self.channels:
