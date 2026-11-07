@@ -2,7 +2,8 @@
 FROM python:3.12-slim-trixie
 WORKDIR /app
 
-RUN apt-get update && apt-get -y install git curl && apt-get autoremove --yes && rm -rf /var/lib/apt/lists/*
+# curl is needed for the compose healthcheck.
+RUN apt-get update && apt-get -y install --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
 
