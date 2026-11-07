@@ -207,7 +207,9 @@ class TV7:
       ts = dateutil.parser.isoparse(d)
 
     if informat == 'unix':
-      ts = datetime.datetime.utcfromtimestamp(d)
+      # Naive UTC, so isoformat() has no offset before the appended 'Z'.
+      ts = datetime.datetime.fromtimestamp(
+        d, datetime.timezone.utc).replace(tzinfo=None)
 
     if outformat == 'xmltv':
       return ts.strftime('%Y%m%d%H%M%S')
