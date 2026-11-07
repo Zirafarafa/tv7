@@ -1,7 +1,8 @@
-FROM python:3.11-slim-buster
+# Python 3.13 needs a newer lxml than the pinned 5.2.2 (no wheels).
+FROM python:3.12-slim-trixie
 WORKDIR /app
 
-RUN apt-get update && apt-get -y install git curl && apt-get autoremove --yes && rm -rf /var/lib/{apt,dpkg,cache,log}/
+RUN apt-get update && apt-get -y install git curl && apt-get autoremove --yes && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
 
