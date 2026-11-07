@@ -5,12 +5,12 @@ import logging
 import datetime
 import sys
 import re
-import m3u_parser
 
 import threading
 
 import tzlocal
 import pytz
+import requests
 from requests_cache import CachedSession
 
 import yaml
@@ -20,6 +20,8 @@ from lxml import etree as ET
 import dateutil.parser
 
 sem = threading.Semaphore()
+
+TVG_NAME_RE = re.compile(r'tvg-name="([^"]*)"')
 
 class TV7:
   def __init__(self, config=None, session=None):
@@ -38,6 +40,7 @@ class TV7:
     self.cache_path = self.config.get('cache_path', 'tv7_cache')
     self.udpxy_address = self.config.get('udpxy_address', None)
     self.use_epg_for_channels = self.config.get('use_epg_for_channels', False)
+    self.m3u_timeout = self.config.get('m3u_timeout', 5)
 
     self._last_update = 0
 
@@ -94,7 +97,7 @@ class TV7:
 
   def maybe_filter_and_sort_channels(self, channels_by_name):
     if not self.include_channels:
-      return channels_by_name.values()
+      return list(channels_by_name.values())
 
     c = []
     for channel_name in self.include_channels:
@@ -102,26 +105,47 @@ class TV7:
         c.append(channels_by_name[channel_name])
     return c
 
+  def read_m3u(self, url):
+    """Returns (tvg-name, stream url) pairs from an m3u playlist."""
+    r = self.session.get(url, timeout=self.m3u_timeout)
+    r.raise_for_status()
+
+    entries = []
+    name = None
+    for line in r.text.splitlines():
+      line = line.strip()
+      if line.startswith('#EXTINF'):
+        m = TVG_NAME_RE.search(line)
+        name = m.group(1) if m else None
+      elif line and not line.startswith('#') and name is not None:
+        entries.append((name, line))
+        name = None
+    return entries
+
   def merge_m3u_channel_data(self, channels_by_name):
     """Merge data from m3u sources into channels_by_name according to priorities."""
     # Sort by ascending order and then we keep on overwriting.
     m3u_urls = sorted(self.m3u_channel_urls_with_priority, key=lambda x: x[1])
-    useragent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
-    parser = m3u_parser.M3uParser(timeout=5, useragent=useragent)
-    print(channels_by_name.keys())
     for m3u_url, priority in m3u_urls:
-      parser.parse_m3u(m3u_url)
-      for channel in parser.get_list():
-        channel_id = channel["tvg"]["name"]
-        channel_url = channel["url"]
-        if channel_id in channels_by_name:
-          channel_data = channels_by_name[channel_id]
-          url_key = 'hls_src' if channel_url.startswith('http') else 'src'
-          # Overwrite channel URL if eligible.
-          if channel_data[url_key] and priority > 0:
-            channel_data[url_key] = channel_url
-        else:
-          print(f"Skipping unknown channel_id {channel_id}.")
+      # Priority 0 cannot override the API data, so don't fetch it.
+      if priority <= 0:
+        continue
+      try:
+        entries = self.read_m3u(m3u_url)
+      except requests.RequestException as e:
+        # An unavailable extra source must not break the whole update.
+        logging.warning('Skipping m3u source %s: %s', m3u_url, e)
+        continue
+
+      for channel_id, channel_url in entries:
+        channel_data = channels_by_name.get(channel_id)
+        if channel_data is None:
+          logging.debug('Skipping unknown channel_id %s from %s', channel_id, m3u_url)
+          continue
+        url_key = 'hls_src' if channel_url.startswith('http') else 'src'
+        # Only replace URLs the channel already offers.
+        if channel_data.get(url_key):
+          channel_data[url_key] = channel_url
     return channels_by_name
 
   def get_channels(self):
