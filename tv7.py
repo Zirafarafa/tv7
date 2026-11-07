@@ -41,7 +41,7 @@ class TV7:
     self._last_update = 0
 
     self.catchup_url='https://api.tv.init7.net/api/replay/'
-    self.channel_url='https://api.tv.init7.net/api/tvchannel/'
+    self.channel_url='https://api.tv.init7.net/api/tvchannel/?streaming_type=all'
     self.epg_url='https://api.tv.init7.net/api/epg/'
 
     if session:
