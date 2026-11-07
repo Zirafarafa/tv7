@@ -21,7 +21,7 @@ In this case, the generated M3U will contain a link to the guide (`x-tvg-url`)
 
 # Testing
 
-First set up a python virtualenv, and run `pip install -r requirements.txt`
+First set up a python virtualenv, and run `pip install -r requirements-dev.txt`
 
 ## Unit Tests
 
@@ -37,6 +37,7 @@ Web service:
 * The following URLS are exposed:
   * /api/status
   * /api/channels?app=<app>
+  * /api/channels?format=json (channels after `include_channels`) or ?format=all (all channels)
   * /api/guide?app=<app>
   * /api/catchup?channel=<channel_uuid>&start=<unix_timestamp>&duration=<seconds>
 

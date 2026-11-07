@@ -3,6 +3,9 @@ import pytest
 import requests_mock
 import requests
 
+import flask
+
+import api
 import tv7
 
 class TestTV7(unittest.TestCase):
@@ -150,6 +153,51 @@ class TestTV7(unittest.TestCase):
 
     self.assertEqual(c[0]['hls_src'], 'https://low/abc.m3u8')
     self.assertEqual(c[0]['src'], 'udp://@1.1.1.9:5000')
+
+  def _updated_tv7_with_include(self, session, s):
+    """Runs update() with include_channels limited to DEF."""
+    api_json, high, low = self._merge_fixture()
+    s.get('https://api.tv.init7.net/api/tvchannel/', json=api_json)
+    s.get('https://m3u/high.m3u', text=high)
+    s.get('https://m3u/low.m3u', text=low)
+    for pk in ('1', '2', '3'):
+      s.get(f'https://api.tv.init7.net/api/epg/?channel={pk}',
+            json={'next': None, 'results': []})
+    t = self._make_tv7(session)
+    t.include_channels = ['DEF']
+    t.update()
+    return t
+
+  def test_update_keeps_all_channels(self):
+    """update() stores both the filtered and the unfiltered, merged channels."""
+    session = requests.Session()
+    with requests_mock.Mocker(session=session) as s:
+      t = self._updated_tv7_with_include(session, s)
+
+    self.assertEqual([c['canonical_name'] for c in t.channels], ['DEF'])
+    self.assertEqual(
+      [c['canonical_name'] for c in t.all_channels], ['ABC', 'DEF', 'GHI'])
+    self.assertEqual(t.all_channels[0]['hls_src'], 'https://high/abc.m3u8')
+
+  def test_api_channels_format_all(self):
+    """/api/channels?format=all returns every channel, format=json the filtered ones."""
+    session = requests.Session()
+    with requests_mock.Mocker(session=session) as s:
+      t = self._updated_tv7_with_include(session, s)
+
+    app = flask.Flask(__name__)
+    app.register_blueprint(api.bp)
+    api.tv7 = t
+    client = app.test_client()
+
+    r = client.get('/api/channels?format=all')
+    self.assertEqual(r.status_code, 200)
+    self.assertEqual(
+      [c['canonical_name'] for c in r.get_json()], ['ABC', 'DEF', 'GHI'])
+
+    r = client.get('/api/channels?format=json')
+    self.assertEqual(r.status_code, 200)
+    self.assertEqual([c['canonical_name'] for c in r.get_json()], ['DEF'])
 
   def test_read_epg_for_channel(self):
     epg_json = [{

@@ -26,6 +26,8 @@ TVG_NAME_RE = re.compile(r'tvg-name="([^"]*)"')
 class TV7:
   def __init__(self, config=None, session=None):
     self.channels = None
+    # Unfiltered, for /api/channels?format=all.
+    self.all_channels = None
 
     self.guide = {}
 
@@ -148,16 +150,19 @@ class TV7:
           channel_data[url_key] = channel_url
     return channels_by_name
 
-  def get_channels(self):
-    """Gets a potentially-filtered list of channels from the desired api."""
+  def get_all_channels_by_name(self):
+    """Gets all channels from the desired api, merged with m3u data."""
     if self.use_epg_for_channels:
       logging.info(">> Using EPG for channel data")
       channels_by_name = self.get_channels_from_epg()
     else:
       logging.info(">> Getting all channels")
       channels_by_name = self.get_channels_from_api()
-    channels_by_name = self.merge_m3u_channel_data(channels_by_name)
-    return self.maybe_filter_and_sort_channels(channels_by_name)
+    return self.merge_m3u_channel_data(channels_by_name)
+
+  def get_channels(self):
+    """Gets a potentially-filtered list of channels from the desired api."""
+    return self.maybe_filter_and_sort_channels(self.get_all_channels_by_name())
 
   def read_epg_for_channel(self, channel_id):
     """Reads EPG for a single channel."""
@@ -171,7 +176,9 @@ class TV7:
       if not force and time.time() - self._last_update < self.update_interval:
         return
 
-      self.channels = self.get_channels()
+      channels_by_name = self.get_all_channels_by_name()
+      self.all_channels = list(channels_by_name.values())
+      self.channels = self.maybe_filter_and_sort_channels(channels_by_name)
 
       logging.info(">> Getting all EPGs")
       for c in self.channels:
