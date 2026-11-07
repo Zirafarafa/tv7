@@ -52,8 +52,8 @@ class TV7:
     # Channel data may be overriden if data for the same channel ID is available
     # from another source with higher priority (bigger number).
     self.m3u_channel_urls_with_priority=[
-        ('https://www.init7.net/de/support/faq/srg-sender-full-hd/srg-fhd-hls.m3u', 2),
-        ('https://www.init7.net/de/support/faq/srg-sender-full-hd/srg-fhd-mc.m3u', 1),
+        ('https://www.init7.net/files/srg-fhd-hls.m3u', 2),
+        ('https://www.init7.net/files/srg-fhd-mc.m3u', 1),
         ('https://api.init7.net/tvchannels.m3u?rp=true', 0),
         ('https://api.init7.net/tvchannels.m3u', 0),
     ]

@@ -154,6 +154,21 @@ class TestTV7(unittest.TestCase):
     self.assertEqual(c[0]['hls_src'], 'https://low/abc.m3u8')
     self.assertEqual(c[0]['src'], 'udp://@1.1.1.9:5000')
 
+  def test_read_m3u_init7_format(self):
+    """init7's SRG playlists put a stray quote before tvg-name; it must still parse."""
+    m3u = (
+      '#EXTM3U\n'
+      '#EXTINF:0 tvg-logo="https://vtvapi03.sys.init7.net/media/logos/1102_SRF1.ch.png"'
+      ' "tvg-name="SRF1.ch" tvg-chno="1108" group-title="Deutsch", SRF 1 FHD\n'
+      'udp://@233.50.230.1:5000\n'
+    )
+    session = requests.Session()
+    with requests_mock.Mocker(session=session) as s:
+      s.get('https://www.init7.net/files/srg-fhd-mc.m3u', text=m3u)
+      t = tv7.TV7(config={}, session=session)
+      entries = t.read_m3u('https://www.init7.net/files/srg-fhd-mc.m3u')
+    self.assertEqual(entries, [('SRF1.ch', 'udp://@233.50.230.1:5000')])
+
   def _updated_tv7_with_include(self, session, s):
     """Runs update() with include_channels limited to DEF."""
     api_json, high, low = self._merge_fixture()
